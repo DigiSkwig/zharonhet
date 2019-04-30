@@ -1,0 +1,237 @@
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>Zharonhet</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style type="text/css">
+        body {
+            text-align:center;
+            margin: 0;
+            padding:100px;
+            background:black;
+        };
+    </style>
+</head>
+<body>
+<script>
+//keyword: Setup
+var targetWidth = 720; // the width of the game we want
+var targetHeight = 480;
+var deviceRatio = (window.innerWidth/window.innerHeight); //device aspect ratio
+var newRatio = (targetHeight/targetWidth)*deviceRatio; //new ratio to fit the screen
+var newWidth = targetWidth*newRatio;
+var newHeight = targetHeight;
+var gameWidth = newWidth;
+var gameHeight = newHeight;
+var config = {
+    type: Phaser.CANVAS,
+    width: gameWidth, //window.innerWidth
+    height: gameHeight, //window.innerHeight
+    physics: {
+          default: 'arcade',
+          arcade: {
+              //gravity
+              gravity: {y: 400},//300
+              debug: false
+          }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update, 
+    }
+};
+//keyword: Variable
+var red; //creates player variable
+var blue; //creates other player variable
+var platform;
+var rock; //rock
+var rocks;
+var cursors; //creates controls variable
+var a; //controls
+var w; //controls
+var d; //controls
+var s;
+var space;//controls
+var ballbounce;
+var blueproj;
+var redproj;
+
+
+  
+var game = new Phaser.Game(config); //Takes the startup script and creates the game variable used globally
+
+function preload ()
+{
+  //keyword: Initialize
+  this.load.image('bg', 'https://cdn.glitch.com/ef1d9f91-701c-4bbb-a578-723ff91c054d%2Fbg3.png?1553011442921');
+  this.load.spritesheet('red', 'https://cdn.glitch.com/ef1d9f91-701c-4bbb-a578-723ff91c054d%2FFire%20Mage.png?1551272407085',{frameWidth:28, frameHeight:28});
+  this.load.spritesheet('blue', 'https://cdn.glitch.com/ef1d9f91-701c-4bbb-a578-723ff91c054d%2FIce%20Mage.png?1551272407013',{frameWidth:28, frameHeight:28});
+  this.load.image('rock', 'https://cdn.glitch.com/ef1d9f91-701c-4bbb-a578-723ff91c054d%2Fboulder-transparent-cartoon-2.png?1552996412927');
+  this.load.image('platform', 'https://cdn.glitch.com/ef1d9f91-701c-4bbb-a578-723ff91c054d%2FPad_1_3.png?1554307633193');
+}
+
+function create ()
+{
+  //keyword: Background
+  bg=this.add.image(400,200,'bg');//adds the background, has to go first, or will be in front of the players
+  bg.setScale(.75);
+  //keyword: Platform
+  platform=this.physics.add.sprite(500,350,'platform');
+  platform.setScale(1.25, .5);
+  platform.setSize(360, 50);
+  platform.setOffset(10,40);
+  platform.body.setAllowGravity(false);
+  platform.setCollideWorldBounds(true);
+  platform.setImmovable(true);
+  
+  red = this.physics.add.sprite(500, 400, 'red').setOrigin(.5);//creates red sprite
+    red.setBounce(0);//.2, bounce when hits ground
+    red.setCollideWorldBounds(true);//Makes the dude not fall through the world
+    red.setScale(2);//size of character
+  //Right Animation Red
+  this.anims.create({ //this creates functions for animating the characters
+    key: 'rired',
+    frames: this.anims.generateFrameNumbers('red', {start: 0, end: 1 }),
+    frameRate: 6,
+    repeat: -1
+    });
+  //Left Animation Red
+  this.anims.create({
+    key: 'lered',
+    frames: this.anims.generateFrameNumbers('red', {start: 2, end: 3 }),
+    frameRate: 6,
+    repeat: -1
+    });
+  blue=this.physics.add.sprite(400,400,'blue').setOrigin(.5);
+  //blue.anchor.setTo(.5,.5);
+    blue.setBounce(0);//.2
+    blue.setCollideWorldBounds(true);
+    blue.setScale(2);
+  //Left Animation Blue
+  this.anims.create({
+    key: 'left',
+    frames: this.anims.generateFrameNumbers('blue', {start: 0, end: 1 }),
+    frameRate: 6,
+    repeat: -1
+    });
+  //Right Animation Blue
+  this.anims.create({
+    key:'right',
+    frames: this.anims.generateFrameNumbers('blue',{start:2, end:3}),
+    frameRate:6,
+    repeat:-1
+    });
+  
+  ballbounce=(1.005);
+  
+  rocks=this.physics.add.group({
+    key:'rock',
+    repeat:2,
+    setXY: {x: 70, y: 20, stepX:400}
+  });
+  rocks.children.iterate(function(child){
+    child.setCircle(220);
+    child.setBounce(ballbounce);//.2
+    child.setCollideWorldBounds(true);
+    child.setScale(.1);
+    child.body.setAllowGravity(true);
+    child.setVelocityX(Math.random()*100);
+  });
+  //keyword: Colliders
+  this.physics.add.collider(red, blue);
+  this.physics.add.collider(red, platform);
+  this.physics.add.collider(blue, platform);
+  this.physics.add.collider(platform, rocks);
+  this.physics.add.collider(rocks, rocks);
+  this.physics.add.overlap(red, rocks, killRed, null, this);
+  this.physics.add.overlap(blue, rocks, killBlue, null, this);
+  
+
+    
+  
+  //control variables
+  cursors = this.input.keyboard.createCursorKeys();
+  this.a = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+  this.d= this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+  this.w= this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+  this.s=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+  this.space= this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+}
+
+function update ()//Updates every .02 seconds
+{
+  //all of these are controls
+  if ((red.body.onFloor() || red.body.touching.down) && cursors.up.isDown)
+  {
+    red.setVelocityY(-400);
+  }
+  else if (cursors.left.isDown)
+  {
+    red.setVelocityX(-300);
+    red.anims.play('lered', true);//add animation from above functions
+  }
+  else if (cursors.right.isDown)
+  {
+    red.setVelocityX(300);
+    red.anims.play('rired', true);
+  } 
+  else if (red.body.onFloor()|| red.body.touching.down)
+  {
+    red.setVelocityX(0);
+  }
+  else if (cursors.down.isDown)
+  {
+    red.setVelocityY(300);
+    red.setVelocityX(0);
+  }
+  if ((blue.body.touching.down || blue.body.onFloor()) && this.w.isDown)
+  {
+    blue.setVelocityY(-400);
+  }
+  else if (this.a.isDown)
+  {
+    blue.setVelocityX(-300);
+    blue.anims.play('right', true);
+  }
+  else if (this.d.isDown)
+  {
+    blue.setVelocityX(300);
+    blue.anims.play('left',true);
+  } 
+
+  else if ((blue.body.touching.down || blue.body.onFloor()) && this.w.isDown)
+  {
+    blue.setVelocityY(-400);
+  }
+ else if (blue.body.onFloor() || blue.body.touching.down)
+  {
+    blue.setVelocityX(0);
+  }
+  else if (this.s.isDown)
+  {
+    blue.setVelocityY(300);
+    blue.setVelocityX(0);
+  }
+  //Reset the Scene
+  if (this.space.isDown)
+  {
+   this.scene.restart(); 
+  }
+  red.body.debugBodyColor=red.body.touching.none ? 0x0099ff : 0x9900ff
+}
+function killRed(red, rock)
+  {
+  red.disableBody(true);
+  red.setVisible(false).setActive(false);
+  return
+  }
+function killBlue(blue, rock)
+  {
+  blue.disableBody(true);
+  blue.setVisible(false).setActive(false);
+  return
+  }
+</script>
+</body>
+</html>
